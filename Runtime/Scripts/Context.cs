@@ -131,5 +131,13 @@ namespace Unity.WebRTC
         {
             NativeMethods.ContextStopMediaStreamTrack(ptrNativeObj, track);
         }
+        public void DeleteStats(IntPtr stats)
+        {
+            NativeMethods.ContextDeleteStats(ptrNativeObj, stats);
+        }
+        public void DeleteStatsReport(IntPtr report)
+        {
+            NativeMethods.ContextDeleteStatsReport(ptrNativeObj, report);
+        }
     }
 }

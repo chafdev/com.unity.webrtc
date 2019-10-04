@@ -166,6 +166,7 @@ namespace WebRTC
             onDataChannel = nullptr;
             onRenegotiationNeeded = nullptr;
             onTrack = nullptr;
+            onGetStats = nullptr;
         }
     }
 
@@ -316,5 +317,21 @@ namespace WebRTC
         }
     }
 #pragma warning(pop)
-}
+    void PeerConnectionObject::GetStats(const webrtc::MediaStreamTrackInterface& selector)
+    {
+        // TODO
+    }
 
+    void PeerConnectionObject::GetStats()
+    {
+        connection->GetStats(this);
+    }
+
+    void PeerConnectionObject::OnStatsDelivered(const rtc::scoped_refptr<const webrtc::RTCStatsReport>& report)
+    {
+        if (onGetStats != nullptr)
+        {
+            onGetStats(this, report);
+        }
+    }
+}

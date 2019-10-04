@@ -27,11 +27,11 @@ namespace Unity.WebRTC
         private DelegateCreateSDFailure onCreateSDFailure;
         private DelegateSetSDSuccess onSetSDSuccess;
         private DelegateSetSDFailure onSetSDFailure;
+        private DelegateGetStats onGetStats;
 
-        private RTCIceCandidateRequestAsyncOperation opIceCandidateRequest;
         private RTCSessionDescriptionAsyncOperation m_opSessionDesc;
         private RTCSessionDescriptionAsyncOperation m_opSetDesc;
-        private RTCSessionDescriptionAsyncOperation m_opSetRemoteDesc;
+        private RTCStatsReportAsyncOperation m_opStatsReport;
 
         private bool disposed;
 
@@ -226,8 +226,10 @@ namespace Unity.WebRTC
             onCreateSDFailure = new DelegateCreateSDFailure(OnFailureCreateSessionDesc);
             onSetSDSuccess = new DelegateSetSDSuccess(OnSuccessSetSessionDesc);
             onSetSDFailure = new DelegateSetSDFailure(OnFailureSetSessionDesc);
+            onGetStats = new DelegateGetStats(OnGetStats);
             NativeMethods.PeerConnectionRegisterCallbackCreateSD(self, onCreateSDSuccess, onCreateSDFailure);
             NativeMethods.PeerConnectionRegisterCallbackSetSD(self, onSetSDSuccess, onSetSDFailure);
+            NativeMethods.PeerConnectionRegisterCallbackGetStats(self, onGetStats);
         }
 
         public void Close()
@@ -337,6 +339,25 @@ namespace Unity.WebRTC
                 var connection = WebRTC.Table[ptr] as RTCPeerConnection;
                 connection.m_opSetDesc.isError = true;
                 connection.m_opSetDesc.Done();
+            }, null);
+        }
+
+        public RTCStatsReportAsyncOperation GetStats(MediaStreamTrack selector = null)
+        {
+            m_opStatsReport = new RTCStatsReportAsyncOperation();
+            var ptrTrack = selector == null ? IntPtr.Zero : selector.ptrNativeObj;
+            NativeMethods.PeerConnectionGetStats(self, ptrTrack);
+            return m_opStatsReport;
+        }
+
+        [AOT.MonoPInvokeCallback(typeof(DelegateGetStats))]
+        static void OnGetStats(IntPtr ptr, IntPtr report)
+        {
+            WebRTC.SyncContext.Post(_ =>
+            {
+                if (WebRTC.Context == null || !WebRTC.Table.Contains(ptr)) { return; }
+                var connection = WebRTC.Table[ptr] as RTCPeerConnection;
+                connection.m_opStatsReport.Done(new RTCStatsReport(report));
             }, null);
         }
     }

@@ -255,6 +255,18 @@ extern "C"
         obj->CreateAnswer(*options);
     }
 
+    UNITY_INTERFACE_EXPORT void PeerConnectionGetStats(PeerConnectionObject* obj, const webrtc::MediaStreamTrackInterface* selector)
+    {
+        if (selector == nullptr)
+        {
+            obj->GetStats();
+        }
+        else
+        {
+            obj->GetStats(*selector);
+        }
+    }
+
     UNITY_INTERFACE_EXPORT DataChannelObject* ContextCreateDataChannel(Context* ctx, PeerConnectionObject* obj, const char* label, const RTCDataChannelInit* options)
     {
         return ctx->CreateDataChannel(obj, label, *options);

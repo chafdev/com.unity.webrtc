@@ -14,11 +14,13 @@ namespace WebRTC
     using DelegateOnIceConnectionChange = void(*)(PeerConnectionObject*, webrtc::PeerConnectionInterface::IceConnectionState);
     using DelegateOnDataChannel = void(*)(PeerConnectionObject*, DataChannelObject*);
     using DelegateOnRenegotiationNeeded = void(*)(PeerConnectionObject*);
-    using DelegateOnTrack = void(*)(PeerConnectionObject*, webrtc::RtpTransceiverInterface*);
+    using DelegateOnTrack = void(*)(PeerConnectionObject*, const webrtc::RtpTransceiverInterface*);
+    using DelegateOnGetStats = void(*)(PeerConnectionObject*, const webrtc::RTCStatsReport*);
 
     class PeerConnectionObject
         : public webrtc::CreateSessionDescriptionObserver
         , public webrtc::PeerConnectionObserver
+        , public webrtc::RTCStatsCollectorCallback
     {
     public:
         PeerConnectionObject(Context& context);
@@ -33,8 +35,8 @@ namespace WebRTC
         void CreateOffer(const RTCOfferOptions& options);
         void CreateAnswer(const RTCAnswerOptions& options);
         void AddIceCandidate(const RTCIceCandidate& candidate);
-        DataChannelObject* CreateDataChannel(const char* label, const RTCDataChannelInit& options);
-
+        void GetStats();
+        void GetStats(const webrtc::MediaStreamTrackInterface& selector);
         void RegisterCallbackSetSD(DelegateSetSDSuccess onSuccess, DelegateSetSDFailure onFailure)
         {
             onSetSDSuccess = onSuccess;
@@ -51,6 +53,7 @@ namespace WebRTC
         void RegisterOnDataChannel(DelegateOnDataChannel callback) { onDataChannel = callback; }
         void RegisterOnRenegotiationNeeded(DelegateOnRenegotiationNeeded callback) { onRenegotiationNeeded = callback; }
         void RegisterOnTrack(DelegateOnTrack callback) { onTrack = callback; }
+        void RegisterOnGetStats(DelegateOnGetStats callback) { onGetStats = callback; }
 
         RTCPeerConnectionState GetConnectionState();
         RTCIceConnectionState GetIceCandidateState();
@@ -94,9 +97,10 @@ namespace WebRTC
         // https://w3c.github.io/webrtc-pc/#set-description
         void OnTrack(
             rtc::scoped_refptr<webrtc::RtpTransceiverInterface> transceiver);
+        // GetStats callback.
+        void OnStatsDelivered(const rtc::scoped_refptr<const webrtc::RTCStatsReport>& report) override;
 
         friend class DataChannelObject;
-
     public:
         DelegateCreateSDSuccess onCreateSDSuccess;
         DelegateCreateSDFailure onCreateSDFailure;
@@ -108,6 +112,7 @@ namespace WebRTC
         DelegateOnDataChannel onDataChannel;
         DelegateOnRenegotiationNeeded onRenegotiationNeeded;
         DelegateOnTrack onTrack;
+        DelegateOnGetStats onGetStats;
         rtc::scoped_refptr<webrtc::PeerConnectionInterface> connection;
     private:
         Context& context;

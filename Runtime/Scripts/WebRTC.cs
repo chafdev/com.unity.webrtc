@@ -331,6 +331,8 @@ namespace Unity.WebRTC
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     internal delegate void DelegateNativeOnDataChannel(IntPtr ptr, IntPtr ptrChannel);
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    internal delegate void DelegateGetStats(IntPtr ptr, IntPtr report);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     internal delegate void DelegateNativeOnMessage(IntPtr ptr, [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 2)] byte[] bytes, int size);
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     internal delegate void DelegateNativeOnOpen(IntPtr ptr);
@@ -378,6 +380,8 @@ namespace Unity.WebRTC
         [DllImport(WebRTC.Lib)]
         public static extern void PeerConnectionRegisterOnIceCandidate(IntPtr pc, DelegateNativeOnIceCandidate callback);
         [DllImport(WebRTC.Lib)]
+        public static extern void PeerConnectionRegisterCallbackGetStats(IntPtr pc, DelegateGetStats callback);
+        [DllImport(WebRTC.Lib)]
         public static extern void PeerConnectionSetLocalDescription(IntPtr pc, ref RTCSessionDescription desc);
         [DllImport(WebRTC.Lib)]
         public static extern void PeerConnectionGetLocalDescription(IntPtr pc, ref RTCSessionDescription desc);
@@ -399,6 +403,8 @@ namespace Unity.WebRTC
         public static extern void PeerConnectionRegisterOnRenegotiationNeeded(IntPtr pc, DelegateNativeOnNegotiationNeeded callback);
         [DllImport(WebRTC.Lib)]
         public static extern void PeerConnectionRegisterOnTrack(IntPtr pc, DelegateNativeOnTrack rtpTransceiverInterface);
+        [DllImport(WebRTC.Lib)]
+        public static extern void PeerConnectionGetStats(IntPtr pc, IntPtr track);
         [DllImport(WebRTC.Lib)]
         public static extern IntPtr RtpTransceiverInterfaceGetTrack(IntPtr rtpTransceiverInterface);
         [DllImport(WebRTC.Lib)]
@@ -453,5 +459,15 @@ namespace Unity.WebRTC
         public static extern IntPtr GetRenderEventFunc(IntPtr ctx);
         [DllImport(WebRTC.Lib)]
         public static extern void ProcessAudio(float[] data, int size);
+        [DllImport(WebRTC.Lib)]
+        public static extern string StatsReportToJson(IntPtr report);
+        [DllImport(WebRTC.Lib)]
+        public static extern void ContextDeleteStatsReport(IntPtr ctx, IntPtr report);
+        [DllImport(WebRTC.Lib)]
+        public static extern string StatsToJson(IntPtr stats);
+        [DllImport(WebRTC.Lib)]
+        public static extern void ContextDeleteStats(IntPtr ctx, IntPtr stats);
+
+
     }
 }

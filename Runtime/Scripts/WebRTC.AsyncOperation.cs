@@ -66,8 +66,28 @@ namespace Unity.WebRTC
             }
         }
 
-        public void Done()
+        internal void Done()
         {
+            isDone = true;
+        }
+    }
+
+    public class RTCStatsReportAsyncOperation : CustomYieldInstruction
+    {
+        public RTCStatsReport report { get; private set; }
+        public bool isDone { get; private set; }
+
+        public override bool keepWaiting
+        {
+            get
+            {
+                return isDone;
+            }
+        }
+
+        internal void Done(RTCStatsReport report)
+        {
+            this.report = report;
             isDone = true;
         }
     }
