@@ -10,13 +10,15 @@ class D3D11GraphicsDevice : public IGraphicsDevice{
 public:
     D3D11GraphicsDevice(ID3D11Device* nativeDevice);
     virtual ~D3D11GraphicsDevice();
+
+    virtual void InitV();
     virtual void ShutdownV();
-    inline virtual void* GetNativeDevicePtrV();
+    inline virtual void* GetEncodeDevicePtrV();
 
-    virtual ITexture2D* CreateEncoderInputTextureV(uint32_t w, uint32_t h);
-    virtual ITexture2D* CreateEncoderInputTextureV(uint32_t w, uint32_t h, void* nativeTexturePtr);
-    virtual void CopyNativeResourceV(void* dest, void* src);
-
+    virtual ITexture2D* CreateDefaultTextureV(uint32_t w, uint32_t h);
+    virtual ITexture2D* CreateDefaultTextureFromNativeV(uint32_t w, uint32_t h, void* nativeTexturePtr);
+    virtual void CopyResourceV(ITexture2D* dest, ITexture2D* src);
+    virtual void CopyResourceFromNativeV(ITexture2D* dest, void* nativeTexturePtr);
 
 private:
     ID3D11Device* m_d3d11Device;
@@ -25,7 +27,7 @@ private:
 
 //---------------------------------------------------------------------------------------------------------------------
 
-void* D3D11GraphicsDevice::GetNativeDevicePtrV() { return reinterpret_cast<void*>(m_d3d11Device); }
+void* D3D11GraphicsDevice::GetEncodeDevicePtrV() { return reinterpret_cast<void*>(m_d3d11Device); }
 
 
 

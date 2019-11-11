@@ -4,9 +4,19 @@
 
 namespace WebRTC {
 
+const D3D12_HEAP_PROPERTIES DEFAULT_HEAP_PROPS = {
+    D3D12_HEAP_TYPE_DEFAULT,
+    D3D12_CPU_PAGE_PROPERTY_UNKNOWN,
+    D3D12_MEMORY_POOL_UNKNOWN,
+    0,
+    0
+};
+
+//---------------------------------------------------------------------------------------------------------------------
+
 D3D12GraphicsDevice::D3D12GraphicsDevice(ID3D12Device* nativeDevice) : m_d3d12Device(nativeDevice)
+    , m_d3d11Device(nullptr), m_d3d11Context(nullptr)
 {
-//    m_d3d12Device->GetImmediateContext(&m_d3d11Context);
 }
 
 
@@ -17,55 +27,104 @@ D3D12GraphicsDevice::~D3D12GraphicsDevice() {
 
 //---------------------------------------------------------------------------------------------------------------------
 
-void D3D12GraphicsDevice::ShutdownV() {
-}
+void D3D12GraphicsDevice::InitV() {
 
-//---------------------------------------------------------------------------------------------------------------------
-ITexture2D* D3D12GraphicsDevice::CreateEncoderInputTextureV(uint32_t w, uint32_t h) {
+    ID3D11Device* legacyDevice;
+    ID3D11DeviceContext* legacyContext;
 
-    // Describe and create a Texture2D.
-    ID3D12Resource* texture = nullptr;
-    D3D12_RESOURCE_DESC textureDesc = {  };
-    textureDesc.MipLevels = 1;
-    textureDesc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
-    textureDesc.Width = w;
-    textureDesc.Height = h;
-    textureDesc.Flags = D3D12_RESOURCE_FLAG_NONE; 
-    textureDesc.DepthOrArraySize = 1;
-    textureDesc.SampleDesc.Count = 1;
-    textureDesc.SampleDesc.Quality = 0;
-    textureDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
-
-    D3D12_HEAP_PROPERTIES heapProperties = {};
-    heapProperties.Type = D3D12_HEAP_TYPE_DEFAULT;
-    heapProperties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
-    heapProperties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
-    heapProperties.CreationNodeMask = 1;
-    heapProperties.VisibleNodeMask = 1;
-
-    m_d3d12Device->CreateCommittedResource(
-        &heapProperties,
-        D3D12_HEAP_FLAG_NONE,
-        &textureDesc,
-        D3D12_RESOURCE_STATE_COPY_DEST,
+    D3D11CreateDevice(
         nullptr,
-        IID_PPV_ARGS(&texture));
+        D3D_DRIVER_TYPE_HARDWARE,
+        nullptr,
+        0,
+        nullptr,
+        0,
+        D3D11_SDK_VERSION,
+        &legacyDevice,
+        nullptr,
+        &legacyContext);
 
-    return new D3D12Texture2D(w,h,texture);
+    legacyDevice->QueryInterface(IID_PPV_ARGS(&m_d3d11Device));
+
+    legacyDevice->GetImmediateContext(&legacyContext);
+    legacyContext->QueryInterface(IID_PPV_ARGS(&m_d3d11Context));
 }
 
 //---------------------------------------------------------------------------------------------------------------------
-ITexture2D* D3D12GraphicsDevice::CreateEncoderInputTextureV(uint32_t w, uint32_t h, void* nativeTexturePtr) {
-    assert(nullptr!=nativeTexturePtr);
-    ID3D12Resource* texPtr = reinterpret_cast<ID3D12Resource*>(nativeTexturePtr);
-    texPtr->AddRef();
-    return new D3D12Texture2D(w,h,texPtr);
+void D3D12GraphicsDevice::ShutdownV() {
+    SAFE_RELEASE(m_d3d11Device);
+    SAFE_RELEASE(m_d3d11Context);
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+ITexture2D* D3D12GraphicsDevice::CreateDefaultTextureV(uint32_t w, uint32_t h) {
+
+    return CreateSharedD3D12Texture(w,h);
+}
+
+//---------------------------------------------------------------------------------------------------------------------
+ITexture2D* D3D12GraphicsDevice::CreateDefaultTextureFromNativeV(uint32_t w, uint32_t h, void* nativeTexturePtr) {
+    return CreateSharedD3D12Texture(w,h);
 }
 
 
 //---------------------------------------------------------------------------------------------------------------------
-void D3D12GraphicsDevice::CopyNativeResourceV(void* dest, void* src) {
+void D3D12GraphicsDevice::CopyResourceV(ITexture2D* dest, ITexture2D* src) {
     //[TODO-sin: 2019-10-15] Implement copying native resource
 }
+
+//---------------------------------------------------------------------------------------------------------------------
+void D3D12GraphicsDevice::CopyResourceFromNativeV(ITexture2D* dest, void* nativeTexturePtr) {
+    ID3D12Resource* src = reinterpret_cast<ID3D12Resource*>(nativeTexturePtr);
+    if (dest->GetNativeTexturePtrV() == src)
+        return;
+
+    //[TODO-sin: 2019-10-30] Implement copying native resource
+   
+}
+
+
+//---------------------------------------------------------------------------------------------------------------------
+
+ITexture2D* D3D12GraphicsDevice::CreateSharedD3D12Texture(uint32_t w, uint32_t h) {
+    //[Note-sin: 2019-10-30] Taken from RaytracedHardShadow
+    // note: sharing textures with d3d11 requires some flags and restrictions:
+    // - MipLevels must be 1
+    // - D3D12_HEAP_FLAG_SHARED for heap flags
+    // - D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET and D3D12_RESOURCE_FLAG_ALLOW_SIMULTANEOUS_ACCESS for resource flags
+
+    D3D12_RESOURCE_DESC desc{};
+    desc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+    desc.Alignment = 0;
+    desc.Width = w;
+    desc.Height = h;
+    desc.DepthOrArraySize = 1;
+    desc.MipLevels = 1;
+    desc.Format = DXGI_FORMAT_B8G8R8A8_UNORM;
+    desc.SampleDesc.Count = 1;
+    desc.SampleDesc.Quality = 0;
+    desc.Layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+    desc.Flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+    desc.Flags |= D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET | D3D12_RESOURCE_FLAG_ALLOW_SIMULTANEOUS_ACCESS;
+
+    D3D12_HEAP_FLAGS flags = D3D12_HEAP_FLAG_SHARED;
+    D3D12_RESOURCE_STATES initialState = D3D12_RESOURCE_STATE_COMMON; //D3D12_RESOURCE_STATE_COPY_DEST
+
+
+    ID3D12Resource* nativeTex = nullptr;
+    m_d3d12Device->CreateCommittedResource(&DEFAULT_HEAP_PROPS, flags, &desc, initialState, nullptr, IID_PPV_ARGS(&nativeTex));
+
+    ID3D11Texture2D* sharedTex = nullptr;
+    HANDLE handle = nullptr;   
+    HRESULT hr = m_d3d12Device->CreateSharedHandle(nativeTex, nullptr, GENERIC_ALL, nullptr, &handle);
+    if (SUCCEEDED(hr)) {
+        //ID3D11Device::OpenSharedHandle() doesn't accept handles created by d3d12. OpenSharedHandle1() is needed.
+        hr = m_d3d11Device->OpenSharedResource1(handle, IID_PPV_ARGS(&sharedTex));
+    }
+
+    return new D3D12Texture2D(w,h,nativeTex, handle, sharedTex);
+}
+
+
 
 } //end namespace

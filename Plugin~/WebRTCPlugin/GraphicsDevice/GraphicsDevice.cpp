@@ -30,9 +30,10 @@ void GraphicsDevice::Init(IUnityInterfaces* unityInterface) {
         }
         default: {
             DebugError("Unsupported Unity Renderer: %d", m_rendererType);
-            break;
+            return;
         }
     }
+    m_device->InitV();
 }
 
 //---------------------------------------------------------------------------------------------------------------------
