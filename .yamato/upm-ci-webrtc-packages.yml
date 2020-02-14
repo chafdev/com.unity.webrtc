@@ -188,7 +188,7 @@ publish_{{ package.name }}:
     image: package-ci/win10:stable
     flavor: b1.large
   commands:
-    - npm install upm-ci-utils@1.1.1 -g --registry https://api.bintray.com/npm/unity/unity-npm
+    - npm install upm-ci-utils@stable -g --registry https://api.bintray.com/npm/unity/unity-npm
     - upm-ci package publish  
   triggers:
     tags:
@@ -200,11 +200,18 @@ publish_{{ package.name }}:
         - "upm-ci~/packages/*.tgz"
   dependencies:
     - .yamato/upm-ci-{{ package.name }}-packages.yml#pack_{{ package.name }}
-    {% for editor in editors %}
     {% for platform in platforms %}
+    {% if platform.name != "macos" -%}
+    {% for editor in editors %}
     {% for param in platform.test_params %}
     - .yamato/upm-ci-{{ package.name }}-packages.yml#test_{{ package.name }}_{{ param.platform }}_{{ param.backend }}_{{ platform.name }}_{{ editor.version }}
     {% endfor %}
     {% endfor %}
+    {% else -%}
+    {% for param in platform.test_params %}
+    - .yamato/upm-ci-{{ package.name }}-packages.yml#test_{{ package.name }}_{{ param.platform }}_{{ param.backend }}_{{ platform.name }}_{{ editor_mac_version }}
     {% endfor %}
+    {% endif -%}
+    {% endfor %}
+
 {% endfor %}
