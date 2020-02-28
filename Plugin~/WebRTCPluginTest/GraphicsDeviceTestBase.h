@@ -17,9 +17,9 @@ protected:
 static tuple<UnityGfxRenderer, UnityEncoderType> VALUES_TEST_ENV[] = {
 #if defined(UNITY_WIN)
     { kUnityGfxRendererD3D11, UnityEncoderType::UnityEncoderHardware },
-    { kUnityGfxRendererD3D11, UnityEncoderType::UnityEncoderSoftware },
-    { kUnityGfxRendererD3D12, UnityEncoderType::UnityEncoderHardware },
-    { kUnityGfxRendererD3D12, UnityEncoderType::UnityEncoderSoftware }
+    { kUnityGfxRendererD3D11, UnityEncoderType::UnityEncoderSoftware }
+//    { kUnityGfxRendererD3D12, UnityEncoderType::UnityEncoderHardware },
+//    { kUnityGfxRendererD3D12, UnityEncoderType::UnityEncoderSoftware }
 #elif defined(UNITY_MAC)
     { kUnityGfxRendererMetal, UnityEncoderType::UnityEncoderSoftware }
 #elif defined(UNITY_LINUX)
